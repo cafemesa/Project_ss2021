@@ -1,0 +1,73 @@
+<launch>
+
+  <!-- Select World Option -->
+  <arg name="world_file" default="$(find project_2021)/worlds/office_empty.world"/>             <!-- Empty world -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_one_person_opt1.world"/-->   <!-- World with one persons option 1 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_one_person_opt2.world"/-->   <!-- World with one persons option 2 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_one_person_opt3.world"/-->   <!-- World with one persons option 3 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_two_person_opt1.world"/-->   <!-- World with two persons option 1 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_two_person_opt2.world"/-->   <!-- World with two persons option 2 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_two_person_opt3.world"/-->   <!-- World with two persons option 3 -->
+  <!--arg name="world_file" default="$(find project_2021)/worlds/office_three_person.world"/-->      <!-- World with three persons -->
+
+
+
+
+
+  <arg name="node_start_delay" default="5.0" />  
+  <param name="/use_sim_time" value="true"/>
+
+  <arg name="gui"        default="true"/>
+  <arg name="world_file" default="$(find pff_sonav)/world/office.world"/>
+
+  <arg name="base"       value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
+  <arg name="battery"    value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 -->
+  <arg name="stacks"     value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons -->
+  <arg name="3d_sensor"  value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro -->
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="use_sim_time" value="true"/>
+    <arg name="debug" value="false"/>
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="world_name" value="$(arg world_file)"/>
+  </include>
+
+  <include file="$(find pff_sonav)/launch/includes/kobuki.launch.xml">
+    <arg name="base" value="$(arg base)"/>
+    <arg name="stacks" value="$(arg stacks)"/>
+    <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
+  </include>
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="30.0" />
+  </node>
+
+  <!-- start PointCloud Fast Filter -->
+  <node name="velodyne" pkg="pff" type="velodyne">
+    <param name="robot_height" value="2.0"/> <!-- Default 1.0 (100cm) -->
+    <param name="sensor_height" value="0.65"/> <!-- Default 0.57 (57cm) -->
+    <param name="horizontal_fov" value="360"/> <!-- Default 360° -->
+    <param name="resolution" value="1.0"/> <!-- Default 0.2° -->
+    <param name="topic_pub" value="/scan"/> <!-- Default /scan -->
+    <param name="topic_sub" value="/velodyne_points"/> <!-- Default velodyne_points -->
+    <param name="frame_id" value="base_link"/> <!-- Default base_scan -->
+  </node>  
+  
+
+  <!-- Map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find pff_sonav)/maps/office_simulated.yaml" />
+
+  <!-- Localization -->
+  <include file="$(find turtlebot_navigation)/launch/includes/amcl/$(arg 3d_sensor)_amcl.launch.xml" >
+    <arg name="initial_pose_x" value="17.177270"/>
+    <arg name="initial_pose_y" value="14.546393"/>
+    <arg name="initial_pose_a" value="0.0"/>
+  </include>
+
+  <!-- Move base -->
+  <include file="$(find pff_sonav)/launch/includes/move_base.launch.xml" />
+
+  <!-- RVIZ Config -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find pff_sonav)/rviz_cfg/social.rviz" />
+
+</launch>

@@ -1,0 +1,37 @@
+<launch>
+
+    <!-- Launch Turtlebot Simulator -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false"/>
+        <arg name="gui" value="true" />
+        <arg name="world_name" value="$(env TURTLEBOT_GAZEBO_WORLD_FILE)"/>
+    </include>
+    
+    <arg name="urdf_file" default="$(find xacro)/xacro '$(find project_2021)/launch/Turlebot_Velodyne_Model/kobuki.urdf.xacro'"/>
+    <param name="robot_description" command="$(arg urdf_file)"/>
+
+    <!-- Gazebo model spawner -->
+    <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model" args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model mobile_base"/>
+
+    <!-- Velocity muxer -->
+    <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet mobile_base_nodelet_manager">
+        <param name="yaml_cfg_file" value="$(find turtlebot_bringup)/param/mux.yaml"/>
+        <remap from="cmd_vel_mux/output" to="mobile_base/commands/velocity"/>
+    </node>
+
+    <!-- Bumper/cliff to pointcloud (not working, as it needs sensors/core messages) -->
+    <include file="$(find turtlebot_bringup)/launch/includes/kobuki/bumper2pc.launch.xml"/>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="30.0" />
+    </node>
+
+    <!-- Open RViz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find project_2021)/rviz_cfg/Perception_velodyne.rviz" />
+
+    <!-- Launch Turtlebot Teleoperation in another terminal -->
+    <!-- roslaunch kobuki_keyop keyop.launch -->
+
+</launch>

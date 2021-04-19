@@ -1,0 +1,12 @@
+<launch>
+
+    <!-- Launch Turtlebot Simulator -->
+    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"></include>
+
+    <!-- Open RViz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find project_2021)/rviz_cfg/Perception_camera.rviz" />
+
+    <!-- Launch Turtlebot Teleoperation in another terminal -->
+    <!-- roslaunch kobuki_keyop keyop.launch -->
+
+</launch>
